@@ -1,0 +1,67 @@
+parameters:
+    app.env: '%env(string:APP_ENV)%'
+    app.domain: '%env(string:APP_DOMAIN)%'
+    app.scheme: '%env(string:APP_SCHEME)%'
+
+    kafka.global.group.id: '%env(string:RD_KAFKA_GROUP_ID)%'
+    kafka.global.metadata.broker.list: '%env(string:RD_KAFKA_BROKER_LIST)%'
+    kafka.topic:
+        auto.offset.reset: beginning
+
+    reports.directory: '%env(string:REPORTS_DIRECTORY)%'
+
+
+services:
+    # default configuration for services in *this* file
+    _defaults:
+        autowire: true      # Automatically injects dependencies in your services.
+        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+
+    # makes classes in src/ available to be used as services
+    # this creates a service per class whose id is the fully-qualified class name
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Kernel.php'
+            - '../src/User/Domain/Entity/'
+            - '../src/Cart/Domain/Entity/'
+            - '../src/Common/Domain/Entity/'
+            - '../src/Order/Domain/Entity/'
+            - '../src/Product/Domain/Entity/'
+            - '../src/Role/Domain/Entity/'
+
+    Symfony\Component\Uid\AbstractUid:
+        class: Symfony\Component\Uid\UuidV4
+
+    Doctrine\Common\Collections\Collection:
+        class: Doctrine\Common\Collections\ArrayCollection
+
+    App\User\Domain\Repository\UserRepositoryInterface:
+        class: App\User\Infrastructure\Repository\UserRepository
+
+    App\Role\Domain\Repository\RoleRepositoryInterface:
+        class: App\Role\Infrastructure\Repository\RoleRepository
+
+    App\Product\Domain\Repository\ProductRepositoryInterface:
+        class: App\Product\Infrastructure\Repository\ProductRepository
+
+    App\Order\Domain\Repository\OrderStatusRepositoryInterface:
+        class: App\Order\Infrastructure\Repository\OrderStatusRepository
+
+    App\Common\Domain\Repository\FlusherInterface:
+        class: App\Common\Infrastructure\Repository\Flusher
+
+    App\Common\Infrastructure\Event\Http\FormatErrorHttpResponseEventListener:
+        arguments:
+            $appEnv: '%app.env%'
+
+    App\Common\Application\Event\DomainEventBusInterface:
+        class: App\Common\Infrastructure\Event\DomainEventBus
+
+    App\Report\Application\UseCase\SoldProduct\SoldProductReportCommandHandler:
+        arguments:
+            $reportsDirectory: '%reports.directory%'
+
+    App\Common\Application\Filesystem\FilesystemInterface:
+        class: App\Common\Infrastructure\Filesystem\Filesystem
